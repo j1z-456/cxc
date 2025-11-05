@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>爱心与蝴蝶</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <style>
+        /* 全局重置 */
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box; /* 统一盒模型 */
+            transform-style: preserve-3d; /* 启用3D变换，主要用于蝴蝶 */
+        }
+
+        /* HTML和Body样式 - 合并和优化 */
+        html,
+        body {
+            height: 100%;
+            width: 100%;
+            padding: 0;
+            margin: 0;
+            background-color: hsl(207 100% 5%); /* 深色背景 */
+            background-image: linear-gradient(hsl(207 100% 15%), hsl(207 100% 5%)); /* 渐变背景 */
+            min-height: 100vh; /* 确保占据整个视口高度 */
+            display: flex; /* 使用flex布局让主要内容居中 */
+            justify-content: center; /* 水平居中 */
+            align-items: center; /* 垂直居中 */
+            perspective: 800px; /* 3D透视效果，主要用于蝴蝶 */
+            overflow: hidden; /* 防止页面出现滚动条 */
+        }
+
+        /* 底部文字样式 */
+        .aa {
+            position: fixed;
+            left: 80%;
+            transform: translateX(-50%); /* 水平居中自身 */
+            bottom: 10px;
+            color: #ccc;
+            z-index: 100; /* 确保在其他元素之上 */
+        }
+
+        /* 容器样式 (樱花和爱心canvas的父级) */
+        .container {
+            width: 100%;
+            height: 100%;
+            position: relative; /* 相对定位，为了内部绝对定位的canvas */
+        }
+
+        /* 爱心Canvas样式 */
+        #pinkboard {
+            z-index: 99; /* 爱心在蝴蝶之上 */
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 50%; /* 移动到容器垂直中心 */
+            left: 50%; /* 移动到容器水平中心 */
+            transform: translate(-50%, -50%); /* 向上左各偏移自身宽高的一半，实现精确居中 */
+            opacity: 0; /* 初期は非表示 */
+            transition: opacity 1s ease-in-out; /* フェードインアニメーション */
+        }
+
+        /* 爱心上のテキストスタイル */
+        #heart-text {
+            position: absolute;
+            top: 47%; /* 愛心より少し上に調整 */
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ea80b0; /* 愛心の粒子と同じ色 */
+            font-size: 1.8em; /* フォントサイズを大きくする */
+            font-weight: bold;
+            text-align: center;
+            white-space: nowrap; /* テキストを一行に保つ */
+            opacity: 0; /* 初期は非表示 */
+            transition: opacity 1s ease-in-out; /* フェードインアニメーション */
+            z-index: 101; /* 愛心より手前に表示 */
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); /* 読みやすくするための影 */
+        }
+
+
+        /* 蝴蝶场景和蝴蝶样式 */
+        .scene {
+            position: absolute; /* 相对于 body 定位，以便可以覆盖整个屏幕 */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* 让鼠标事件穿透，不影响下方元素 */
+            z-index: 98; /* 蝴蝶在爱心canvas之下 */
+            opacity: 0; /* 初期は非表示 */
+            transition: opacity 2s ease-in-out; /* フェードインアニメーション */
+        }
+
+        .scene * {
+            position: absolute; /* 场景内的所有子元素绝对定位 */
+        }
+
+        .butterfly {
+            position: absolute;
+            animation: fly calc(12s + var(--random) * 6s) calc(var(--random) * -100s) infinite linear;
+        }
+
+        /* 蝴蝶翅膀伪元素 */
+        .butterfly::before,
+        .butterfly::after {
+            box-shadow: 0 0 15px #0007 inset;
+            content: '';
+            position: absolute;
+            width: 30px;
+            height: 53px;
+            background-color: hsl(calc(197 + var(--random) * 20) 100% 50%); /* 随机颜色 */
+            /* clip-path を SVG の ID を参照するように変更 */
+            clip-path: url(#butterfly-shape);
+            transform-origin: left;
+        }
+
+        .butterfly::before {
+            animation: flapB calc(0.2s + var(--random) * 0.1s) infinite alternate ease-in-out;
+        }
+
+        .butterfly::after {
+            animation: flapA calc(0.2s + var(--random) * 0.1s) infinite alternate ease-in-out;
+        }
+
+        /* 蝴蝶飞行关键帧动画 */
+        @keyframes fly {
+            0% {
+                transform: rotateX(90deg) rotate(calc(var(--random) * 360deg)) translateX(200px) translateZ(-70vh);
+            }
+            100% {
+                transform: rotateX(90deg) rotate(calc(var(--random) * 360deg - 720deg)) translateX(200px) translateZ(70vh);
+            }
+        }
+
+        /* 蝴蝶扇动翅膀关键帧动画 */
+        @keyframes flapB {
+            from {
+                rotate: y 15deg;
+            }
+            to {
+                rotate: y -30deg;
+            }
+        }
+        @keyframes flapA {
+            from {
+                rotate: y 165deg;
+            }
+            to {
+                rotate: y 210deg;
+            }
+        }
+
+        /* 雨の要素の基本スタイル */
+        .rain {
+            position: absolute;
+            animation: make-it-rain linear infinite;
+        }
+
+        @keyframes make-it-rain {
+            from { top: -10%; }
+            to { top: 110%; }
+        }
+
+        /* 添加加载覆盖层 */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
+            z-index: 1000;
+            transition: opacity 1s ease-out; /* ロード画面のフェードアウト */
+        }
+
+        .loading-overlay button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: #8321FF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+    <svg width="0" height="0" style="position: absolute; overflow: hidden;">
+        <defs>
+            <clipPath id="butterfly-shape" clipPathUnits="objectBoundingBox">
+                <path d="M0 0.470c 0.088-0.103 0.326-0.294 0.548-0.388 0.160-0.068 0.419-0.121 0.419 0.047 0 0.033-0.034 0.280-0.054 0.321-0.069 0.140-0.320 0.175-0.544 0.154 0.391 0.038 0.490 0.163 0.276 0.287-0.408 0.237-0.586-0.059-0.632-0.136-0.008-0.014-0.012-0.020-0.012-0.015z"></path>
+            </clipPath>
+        </defs>
+    </svg>
+
+    <div id="jsi-cherry-container" class="container">
+        <img class="img" src="./123.png" alt="" style="display: none;"/>
+        <div id="heart-text">小臣臣~&#x2764;~</div>
+        <canvas id="pinkboard" class="container"></canvas>
+    </div>
+
+    <div class="scene">
+        <div class="butterfly" style="--random: 0.73428;"></div>
+        <div class="butterfly" style="--random: 0.82130;"></div>
+        <div class="butterfly" style="--random: 0.46092;"></div>
+        <div class="butterfly" style="--random: 0.05981;"></div>
+        <div class="butterfly" style="--random: 0.20235;"></div>
+        <div class="butterfly" style="--random: 0.91763;"></div>
+        <div class="butterfly" style="--random: 0.34480;"></div>
+        <div class="butterfly" style="--random: 0.27659;"></div>
+        <div class="butterfly" style="--random: 0.08087;"></div>
+        <div class="butterfly" style="--random: 0.66670;"></div>
+        <div class="butterfly" style="--random: 0.39124;"></div>
+        <div class="butterfly" style="--random: 0.15907;"></div>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <h2>Butterflies-and-hearts 送给可爱的陈玺臣同学~</h2>
+        <p>you find someone who's iridescent, and when you do, nothing will ever compare.</p>
+        <button id="startButton">点我开始</button>
+    </div>
+
+    <audio id="background-music" src="https://java-ai-mqh.oss-cn-beijing.aliyuncs.com/2025/04/WeChat_20250523171307.mp3" loop></audio>
+
+    <button onclick="toggleMute()" style="position: fixed; bottom: 10px; right: 10px; z-index: 100; background-color: rgba(255,255,255,0.5); border: none; padding: 5px 10px; cursor: pointer;">
+        <span id="mute-text">close</span>
+    </button>
+    <div class="aa">@ 好姐妹@小马同志</div>
+
+    <script>
+
+
+
+        // ページロード時に実行
+        document.addEventListener('DOMContentLoaded', () => {
+            createRainEffect(); // 雨滴効果の生成
+            attemptAutoPlay(); // 音楽の自動再生とロード画面の制御
+        });
+
+        // 雨滴効果の生成
+        function createRainEffect() {
+            const primaryColor = { r: 131, g: 33, b: 255, a: 0.75 };
+
+            function getRandomInt(min, max) {
+                return Math.floor(Math.random() * (max - min + 1)) + min;
+            }
+
+            function lightenColor(color, percentage) {
+                const factor = 1 + percentage / 100;
+                return {
+                    r: Math.min(255, Math.floor(color.r * factor)),
+                    g: Math.min(255, Math.floor(color.g * factor)),
+                    b: Math.min(255, Math.floor(color.b * factor)),
+                    a: color.a
+                };
+            }
+
+            const numRaindrops = 250;
+
+            for (let i = 0; i < numRaindrops; i++) {
+                const rainDrop = document.createElement('div');
+                rainDrop.classList.add('rain');
+
+                const randomLighten = getRandomInt(1, 19);
+                const lightenedColor = lightenColor(primaryColor, randomLighten);
+
+                const width = getRandomInt(1, 2);
+                const height = getRandomInt(3, 13);
+                const top = getRandomInt(1, 99);
+                const left = getRandomInt(1, 99);
+                const animationDuration = getRandomInt(3000, 7000);
+                const animationDelay = -getRandomInt(0, animationDuration);
+
+                rainDrop.style.backgroundColor = `rgba(${lightenedColor.r}, ${lightenedColor.g}, ${lightenedColor.b}, ${lightenedColor.a})`;
+                rainDrop.style.width = `${width}px`;
+                rainDrop.style.height = `${height}px`;
+                rainDrop.style.top = `${top}%`;
+                rainDrop.style.left = `${left}%`;
+                rainDrop.style.animationDuration = `${animationDuration}ms`;
+                rainDrop.style.animationDelay = `${animationDelay}ms`;
+
+                document.body.appendChild(rainDrop);
+            }
+        }
+
+        // 音楽の自動再生とロード画面の制御
+        function attemptAutoPlay() {
+            const audio = document.getElementById('background-music');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const startButton = document.getElementById('startButton');
+            const butterflyScene = document.querySelector('.scene');
+            const pinkboardCanvas = document.getElementById('pinkboard');
+            const heartTextElement = document.getElementById('heart-text'); // 新しく追加
+
+            // クリックイベントで再生を開始
+            startButton.addEventListener('click', () => {
+                audio.play()
+                    .then(() => {
+                        // ロード画面をフェードアウトして非表示
+                        loadingOverlay.style.opacity = '0';
+                        setTimeout(() => {
+                            loadingOverlay.style.display = 'none';
+                        }, 1000); // CSS transition duration
+
+                        // 蝶を徐々に表示
+                        butterflyScene.style.opacity = '1';
+
+                        // 5秒後に愛心とテキストを描画開始
+                        setTimeout(() => {
+                            pinkboardCanvas.style.opacity = '1'; // 愛心をフェードイン
+                            heartTextElement.style.opacity = '1'; // テキストをフェードイン
+                            initHeartParticles(); // 愛心描画の初期化
+                        }, 5000);
+
+                    })
+                    .catch(error => {
+                        console.error("音楽の再生に失敗しました:", error);
+                        // 再生に失敗した場合でも、コンテンツは表示する
+                        loadingOverlay.style.opacity = '0';
+                        setTimeout(() => {
+                            loadingOverlay.style.display = 'none';
+                        }, 1000);
+                        butterflyScene.style.opacity = '1';
+                        setTimeout(() => {
+                            pinkboardCanvas.style.opacity = '1';
+                            heartTextElement.style.opacity = '1'; // テキストも表示
+                            initHeartParticles();
+                        }, 5000);
+                    });
+            });
+
+            // ページロード時、自動再生を試みる（ブラウザによって阻止される可能性あり）
+            audio.play().then(() => {
+                // 自動再生が成功した場合、ロード画面を隠す
+                loadingOverlay.style.opacity = '0';
+                setTimeout(() => {
+                    loadingOverlay.style.display = 'none';
+                }, 1000);
+                butterflyScene.style.opacity = '1'; // 蝶も表示
+                setTimeout(() => {
+                    pinkboardCanvas.style.opacity = '1'; // 愛心も表示
+                    heartTextElement.style.opacity = '1'; // テキストも表示
+                    initHeartParticles();
+                }, 5000); // 5秒後に愛心とテキストを表示
+            }).catch(error => {
+                // 自動再生が阻止された場合、ユーザーにボタンをクリックさせる
+                console.log("自動再生が阻止されました。ユーザー操作が必要です。");
+                startButton.style.display = 'block'; // ボタンを表示
+            });
+        }
+
+        // ミュート/ミュート解除
+        function toggleMute() {
+            const audio = document.getElementById('background-music');
+            const muteText = document.getElementById('mute-text');
+
+            audio.muted = !audio.muted;
+            muteText.textContent = audio.muted ? 'open' : 'close';
+
+            if (!audio.muted) {
+                audio.play().catch(error => {
+                    console.warn("再生に失敗しました:", error);
+                });
+            }
+        }
+
+        /*
+         * Settings for heart particles
+         */
+        var settings = {
+            particles: {
+                length: 500, // maximum amount of particles
+                duration: 2, // particle duration in sec
+                velocity: 100, // particle velocity in pixels/sec
+                effect: -0.75, // play with this for a nice effect
+                size: 30, // particle size in pixels
+            },
+        };
+
+        (function () {
+            var b = 0;
+            var c = ["ms", "moz", "webkit", "o"];
+            for (var a = 0; a < c.length && !window.requestAnimationFrame; ++a) {
+                window.requestAnimationFrame = window[c[a] + "RequestAnimationFrame"];
+                window.cancelAnimationFrame =
+                    window[c[a] + "CancelAnimationFrame"] ||
+                    window[c[a] + "CancelRequestAnimationFrame"];
+            }
+            if (!window.requestAnimationFrame) {
+                window.requestAnimationFrame = function (h, e) {
+                    var d = new Date().getTime();
+                    var f = Math.max(0, 16 - (d - b));
+                    var g = window.setTimeout(function () {
+                        h(d + f);
+                    }, f);
+                    b = d + f;
+                    return g;
+                };
+            }
+            if (!window.cancelAnimationFrame) {
+                window.cancelAnimationFrame = function (d) {
+                    clearTimeout(d);
+                };
+            }
+        })();
+
+        /*
+         * Point class
+         */
+        var Point = (function () {
+            function Point(x, y) {
+                this.x = typeof x !== "undefined" ? x : 0;
+                this.y = typeof y !== "undefined" ? y : 0;
+            }
+            Point.prototype.clone = function () {
+                return new Point(this.x, this.y);
+            };
+            Point.prototype.length = function (length) {
+                if (typeof length == "undefined")
+                    return Math.sqrt(this.x * this.x + this.y * this.y);
+                this.normalize();
+                this.x *= length;
+                this.y *= length;
+                return this;
+            };
+            Point.prototype.normalize = function () {
+                var length = this.length();
+                if (length === 0) {
+                    // Avoid division by zero
+                    this.x = 0;
+                    this.y = 0;
+                } else {
+                    this.x /= length;
+                    this.y /= length;
+                }
+                return this;
+            };
+            return Point;
+        })();
+
+        /*
+         * Particle class
+         */
+        var Particle = (function () {
+            function Particle() {
+                this.position = new Point();
+                this.velocity = new Point();
+                this.acceleration = new Point();
+                this.age = 0;
+            }
+            Particle.prototype.initialize = function (x, y, dx, dy) {
+                this.position.x = x;
+                this.position.y = y;
+                this.velocity.x = dx;
+                this.velocity.y = dy;
+                this.acceleration.x = dx * settings.particles.effect;
+                this.acceleration.y = dy * settings.particles.effect;
+                this.age = 0;
+            };
+            Particle.prototype.update = function (deltaTime) {
+                this.position.x += this.velocity.x * deltaTime;
+                this.position.y += this.velocity.y * deltaTime;
+                this.velocity.x += this.acceleration.x * deltaTime;
+                this.velocity.y += this.acceleration.y * deltaTime;
+                this.age += deltaTime;
+            };
+            Particle.prototype.draw = function (context, image) {
+                function ease(t) {
+                    return --t * t * t + 1;
+                }
+                var size = image.width * ease(this.age / settings.particles.duration);
+                context.globalAlpha = 1 - this.age / settings.particles.duration;
+                context.drawImage(
+                    image,
+                    this.position.x - size / 2,
+                    this.position.y - size / 2,
+                    size,
+                    size
+                );
+            };
+            return Particle;
+        })();
+
+        /*
+         * ParticlePool class
+         */
+        var ParticlePool = (function () {
+            var particles,
+                firstActive = 0,
+                firstFree = 0,
+                duration = settings.particles.duration;
+
+            function ParticlePool(length) {
+                // create and populate particle pool
+                particles = new Array(length);
+                for (var i = 0; i < particles.length; i++) particles[i] = new Particle();
+            }
+            ParticlePool.prototype.add = function (x, y, dx, dy) {
+                particles[firstFree].initialize(x, y, dx, dy);
+
+                // handle circular queue
+                firstFree++;
+                if (firstFree == particles.length) firstFree = 0;
+                if (firstActive == firstFree) firstActive++;
+                if (firstActive == particles.length) firstActive = 0;
+            };
+            ParticlePool.prototype.update = function (deltaTime) {
+                var i;
+
+                // update active particles
+                if (firstActive < firstFree) {
+                    for (i = firstActive; i < firstFree; i++) particles[i].update(deltaTime);
+                }
+                if (firstFree < firstActive) {
+                    for (i = firstActive; i < particles.length; i++) particles[i].update(deltaTime);
+                    for (i = 0; i < firstFree; i++) particles[i].update(deltaTime);
+                }
+
+                // remove inactive particles
+                while (
+                    particles[firstActive].age >= duration &&
+                    firstActive != firstFree
+                ) {
+                    firstActive++;
+                    if (firstActive == particles.length) firstActive = 0;
+                }
+            };
+            ParticlePool.prototype.draw = function (context, image) {
+                // draw active particles
+                if (firstActive < firstFree) {
+                    for (i = firstActive; i < firstFree; i++) particles[i].draw(context, image);
+                }
+                if (firstFree < firstActive) {
+                    for (i = firstActive; i < particles.length; i++) particles[i].draw(context, image);
+                    for (i = 0; i < firstFree; i++) particles[i].draw(context, image);
+                }
+            };
+            return ParticlePool;
+        })();
+
+        /*
+         * Putting it all together (Heart particles animation)
+         */
+        function initHeartParticles() {
+            var canvas = document.getElementById("pinkboard");
+            var context = canvas.getContext("2d"),
+                particles = new ParticlePool(settings.particles.length),
+                particleRate =
+                    settings.particles.length / settings.particles.duration, // particles/sec
+                time;
+
+            // get point on heart with -PI <= t <= PI
+            function pointOnHeart(t) {
+                return new Point(
+                    160 * Math.pow(Math.sin(t), 3),
+                    130 * Math.cos(t) -
+                    50 * Math.cos(2 * t) -
+                    20 * Math.cos(3 * t) -
+                    10 * Math.cos(4 * t) +
+                    25
+                );
+            }
+
+            // creating the particle image using a dummy canvas
+            var image = (function () {
+                var canvas = document.createElement("canvas"),
+                    context = canvas.getContext("2d");
+                canvas.width = settings.particles.size;
+                canvas.height = settings.particles.size;
+                // helper function to create the path
+                function to(t) {
+                    var point = pointOnHeart(t);
+                    point.x =
+                        settings.particles.size / 2 +
+                        (point.x * settings.particles.size) / 350;
+                    point.y =
+                        settings.particles.size / 2 -
+                        (point.y * settings.particles.size) / 350;
+                    return point;
+                }
+                // create the path
+                context.beginPath();
+                var t = -Math.PI;
+                var point = to(t);
+                context.moveTo(point.x, point.y);
+                while (t < Math.PI) {
+                    t += 0.01; // baby steps!
+                    point = to(t);
+                    context.lineTo(point.x, point.y);
+                }
+                context.closePath();
+                // create the fill
+                context.fillStyle = "#ea80b0"; // 爱心粒子的颜色
+                context.fill();
+                // create the image
+                var image = new Image();
+                image.src = canvas.toDataURL();
+                return image;
+            })();
+
+            // render that thing!
+            function render() {
+                // next animation frame
+                requestAnimationFrame(render);
+
+                // update time
+                var newTime = new Date().getTime() / 1000,
+                    deltaTime = newTime - (time || newTime);
+                time = newTime;
+
+                // clear canvas
+                context.clearRect(0, 0, canvas.width, canvas.height);
+
+                // create new particles
+                var amount = particleRate * deltaTime;
+                for (var i = 0; i < amount; i++) {
+                    var pos = pointOnHeart(Math.PI - 2 * Math.PI * Math.random());
+                    var dir = pos.clone().length(settings.particles.velocity);
+                    particles.add(
+                        canvas.width / 2 + pos.x,
+                        canvas.height / 2 - pos.y,
+                        dir.x,
+                        -dir.y
+                    );
+                }
+
+                // update and draw particles
+                particles.update(deltaTime);
+                particles.draw(context, image);
+            }
+
+            // handle (re-)sizing of the canvas
+            function onResize() {
+                canvas.width = canvas.clientWidth;
+                canvas.height = canvas.clientHeight;
+            }
+            window.addEventListener('resize', onResize); // resize イベントリスナーを修正
+
+            // delay rendering bootstrap
+            setTimeout(function () {
+                onResize();
+                render();
+            }, 10);
+        } // End of initHeartParticles
+    </script>
+
+    <script>
+        // 桜のコードは未完成で動作しないため、ここでは実行しません。
+        // もし桜吹雪の機能が必要な場合は、別途完全なライブラリやコードを組み込む必要があります。
+        var RENDERER = {
+            INIT_CHERRY_BLOSSOM_COUNT: 30,
+            MAX_ADDING_INTERVAL: 10,
+
+            init: function () {
+                this.setParameters();
+                // this.reconstructMethods(); // 桜の動作に必要なメソッドがないためコメントアウト
+                // this.createCherries();    // 桜の動作に必要なメソッドがないためコメントアウト
+                // this.render();            // 桜の動作に必要なメソッドがないためコメントアウト
+            },
+            setParameters: function () {
+                this.$container = $("#jsi-cherry-container");
+                this.width = this.$container.width();
+                this.height = this.$container.height();
+                // context は #pinkboard (愛心) の canvas と同じものを指すので、別途作成する必要はないかもしれません
+                // ただし、桜と愛心を同じ canvas で描画すると、描画順序やクリアの制御が複雑になります
+                // 現状のコードでは桜は動作しないので、この部分は機能していません
+                // this.context = $("<canvas />")
+                //    .attr({ width: this.width, height: this.height })
+                //    .appendTo(this.$container)
+                //    .get(0);
+            },
+        };
+        // $(function () {
+        //    RENDERER.init(); // 桜の初期化を呼び出さない (未完成のため)
+        // });
+    </script>
+  <script>
+  function createMeteor() {
+    const meteor = document.createElement('div');
+    const isMarshmallow = Math.random() < 0.5; // Determine if it's "棉花糖" or "❤️"
+    meteor.textContent = isMarshmallow ? '小臣臣' : '❤️';
+    meteor.style.position = 'absolute';
+    meteor.style.left = Math.random() * 100 + 'vw';
+    meteor.style.top = '-20px'; /* Start above the visible area */
+    meteor.style.fontSize = Math.random() * 20 + 10 + 'px'; /* Random size */
+    
+    // Set color based on content
+    meteor.style.color = isMarshmallow ? '#ea80b0' : '#fff'; /* Pink for 棉花糖, white for heart */
+    
+    meteor.style.animation = `fall ${Math.random() * 5 + 3}s linear forwards`; /* Random speed */
+    meteor.style.zIndex = '10'; /* Ensure it's above other elements */
+    document.body.appendChild(meteor);
+
+    /* Remove the element after the animation finishes */
+    meteor.addEventListener('animationend', () => {
+      meteor.remove();
+    });
+  }
+
+  /* Add the animation to your CSS */
+  const style = document.createElement('style');
+  style.innerHTML = `
+    @keyframes fall {
+      to {
+        transform: translateY(100vh);
+      }
+    }
+  `;
+  document.head.appendChild(style);
+
+  /* Call createMeteor every 0.5 seconds */
+  setInterval(createMeteor, 500);
+</script>
+</body>
+</html>
